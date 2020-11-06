@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
+
+    <!--1、扫描service下的包-->
+    <!--做完下面这一步之后service包内只要有注解的类都是可以自动扫描的-->
+    <context:component-scan base-package="com.zrn.service"/>
+
+    <!--2、将我们的所有业务类注入spring，可以通过配置或者注解实现，这里使用配置-->
+    <bean id="StudentServiceImpl" class="com.zrn.service.StudentServiceImpl">
+        <property name="studentMapper" ref="studentMapper"/>
+    </bean>
+    <!--3、声明式事务配置：增删改的自动提交-->
+    <bean id="TransactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <!--这里只需要注入一个数据源，如果需要横切事务则还需要写AOP的植入，那样的话还需要在依赖中导入一个植入包-->
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+    <!--4、AOP事务支持-->
+    <!--至此spring-service和spring-dao整合完毕，意味着spring层的完成-->
+</beans>

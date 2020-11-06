@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
+
+    <!--1、关联数据库配置文件:这个操作可以使数据库的配置文件通过spring来读取，是可以写死的组合技-->
+    <context:property-placeholder location="classpath:database.properties"/>
+
+    <!--2、连接池 :Spring原生的是在class内写入DriverManageDataSource，这里我们使用一个新的连接池
+         连接池的种类有很多
+         dbcp：半自动化操作，不能自动连接，需要手动连接
+         c3p0：自动化操作，可以自动化的加载配置文件，并且可以自动设置到对象中，也是我们这里使用的技术,缺点就是跑起来有点慢
+         druid、hikari等在很多公司里会用到。
+     -->
+    <bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+        <property name="driverClass" value="${jdbc.driver}" />
+        <property name="jdbcUrl" value="${jdbc.url}" />
+        <property name="user" value="${jdbc.username}"/>
+        <property name="password" value="${jdbc.password}"/>
+
+        <!--c3p0池的私有属性如下-->
+        <!--最大和最小连接池的大小：-->
+        <property name="maxPoolSize" value="30"/>
+        <property name="minPoolSize" value="10"/>
+        <!--关闭连接后不会自动连接(Commit)-->
+        <property name="autoCommitOnClose" value="false"/>
+        <!--确认连接超时时间:如果连接超过10秒钟就会算连接超时-->
+        <property name="checkoutTimeout" value="10000"/>
+        <!--当确认连接失败时的重试次数-->
+        <property name="acquireRetryAttempts" value="2"/>
+    </bean>
+    <!--3、sqlSessionFactory+动态扫描-->
+    <bean name="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <!--绑定mybatis的配置文件-->
+        <property name="configLocation" value="classpath:mybatis-config.xml"/>
+    </bean>
+    <!--一路按顺序走到这里的话我们的Spring和Mybatis就整合到了一起-->
+    <!--此时考虑到可能需要把dao层的StudentMapper等接口当成bean注入进来-->
+    <!--本来的话这里需要在dao内新建一个StudentMapperImpl需要使用到SqlSessionFactoryTemplate这么个东西
+        可能还需要继承一个sqlSessionDaoSupport，现在使用下面的方法可以全自动注入，直接省略这些复杂的手动操作-->
+    <!--现在就可以用一个新的Spring提供的 配置dao接口的扫描包 动态的实现自动化配置
+        作用：动态的实现了Dao接口可以注入到Spring容器中-->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <!--注入sqlSessionFactory-->
+        <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"/>
+        <!--要扫描的dao包-->
+        <property name="basePackage" value="com.zrn.dao"/>
+    </bean>
+</beans>
